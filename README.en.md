@@ -363,7 +363,7 @@ Actually verified: syntax parsing under PowerShell 2.0 and 5.1; reading Russian 
 the `-Report` mode and writing the report to a file; the exit code reaching the calling process; the SNTP
 client (real answers from live servers: `stratum 13` and `stratum 4` with correct offsets); the
 `w32tm /stripchart` fallback path; window layout (0 overlapping controls after a forced re-layout);
-33 tooltips; port 123 ownership detection (the service inside `svchost` is recognised as ours); automatic
+39 tooltips; port 123 ownership detection (the service inside `svchost` is recognised as ours); automatic
 `,0x9` flag insertion; deleting an (empty) policy branch without touching anything; the change preview in
 policy mode.
 
