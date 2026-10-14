@@ -95,7 +95,7 @@ $ErrorActionPreference = 'Continue'
 # ---------------------------------------------------------------------------
 # Общие переменные
 # ---------------------------------------------------------------------------
-$script:Ver        = '1.5.1'
+$script:Ver        = '1.5.2'
 $script:SvcName    = 'w32time'
 $script:RegRoot    = 'SYSTEM\CurrentControlSet\Services\W32Time'
 $script:FwRuleName = 'NTP Server UDP 123 (NtpManager)'
@@ -2958,19 +2958,40 @@ function Build-Form {
     $b.Add_Click({ On-TextReportClick })
     $b = New-UiButton $top 'Справка' 572 6 90 26
     $b.Add_Click({ On-HelpClick })
-    $script:Ui['Summary'] = New-UiLabel $top 'Итог: ещё не проверялось' 8 32 900 18
 
-    # Переключатель языка интерфейса (применяется после перезапуска утилиты)
-    [void](New-UiLabel $top 'Язык:' 672 10 40 18)
+    # Переключатель языка интерфейса (применяется после перезапуска утилиты).
+    # Подпись языка разная по ширине («Язык:» / «Language:»), поэтому панель
+    # прижата вправо, подпись сама подстраивается под текст и встаёт вплотную
+    # слева от списка: жёсткие координаты давали перенос и наложение на список.
+    $langPanel = New-Object System.Windows.Forms.Panel
+    $langPanel.Dock = [System.Windows.Forms.DockStyle]::Right
+    [void]$top.Controls.Add($langPanel)
+
+    $lblLang = New-Object System.Windows.Forms.Label
+    $lblLang.AutoSize = $true
+    $lblLang.Text = (T 'Язык:')
+    [void]$langPanel.Controls.Add($lblLang)
+
     $cmbLang = New-Object System.Windows.Forms.ComboBox
-    $cmbLang.Location = New-Object System.Drawing.Point(714, 6)
     $cmbLang.Size = New-Object System.Drawing.Size(120, 22)
     $cmbLang.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
     [void]$cmbLang.Items.Add('Русский')
     [void]$cmbLang.Items.Add('English')
     $cmbLang.Add_SelectedIndexChanged({ On-LanguageChanged })
-    [void]$top.Controls.Add($cmbLang)
+    [void]$langPanel.Controls.Add($cmbLang)
     $script:Ui['CmbLang'] = $cmbLang
+
+    # Размеры считаются по факту: сколько нужно подписи и списку вместе.
+    $labelW = [System.Windows.Forms.TextRenderer]::MeasureText($lblLang.Text, $lblLang.Font).Width + 2
+    $langPanel.Width = 6 + $labelW + 8 + 120 + 6
+    $cmbLang.Location = New-Object System.Drawing.Point(($langPanel.Width - 6 - 120), 6)
+    $lblLang.Location = New-Object System.Drawing.Point(6, (6 + [int]((22 - $lblLang.PreferredSize.Height) / 2)))
+    $cmbLang.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Right
+    $lblLang.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Right
+
+    # Строка итога не должна заезжать под переключатель языка.
+    $script:Ui['Summary'] = New-UiLabel $top 'Итог: ещё не проверялось' 8 32 ($form.ClientSize.Width - $langPanel.Width - 16) 18
+    $script:Ui['Summary'].Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Left -bor [System.Windows.Forms.AnchorStyles]::Right
 
     # --- нижняя панель: журнал ---
     $bottom = New-Object System.Windows.Forms.Panel
@@ -3086,11 +3107,18 @@ function Build-Form {
     [void](New-UiLabel $g3 'Внимание: остановка службы времени на контроллере домена может временно нарушить работу Kerberos.' 12 208 860 32)
 
     $g4 = New-UiGroup $tp2 'Групповая политика службы времени (её значения важнее реестра службы)' 8 502 890 52
-    $script:Ui['ChkPolicyMode'] = New-UiCheck $g4 'Записывать параметры и в ветвь политики (SOFTWARE\Policies\Microsoft\W32Time)' 12 20 570
+    $script:Ui['ChkPolicyMode'] = New-UiCheck $g4 'Записывать параметры и в ветвь политики (SOFTWARE\Policies\Microsoft\W32Time)' 12 20 560
     $b = New-UiButton $g4 'Открыть gpedit' 600 18 130 26
     $b.Add_Click({ On-OpenGpeditClick })
     $script:Ui['BtnGpedit'] = $b
     $b = New-UiButton $g4 'Удалить ветвь политики...' 738 18 140 26
+    # Ширина кнопки считается по фактическому тексту: в английском варианте надпись
+    # длиннее и в 140 px обрезалась; кнопка прижимается к правому краю группы.
+    $needW = [System.Windows.Forms.TextRenderer]::MeasureText($b.Text, $b.Font).Width + 22
+    if ($needW -lt 140) { $needW = 140 }
+    if ($needW -gt $b.Width) { $b.Width = $needW }
+    $b.Left = $g4.Width - $b.Width - 12
+    $script:Ui['BtnGpedit'].Left = $b.Left - 8 - $script:Ui['BtnGpedit'].Width
     $b.Add_Click({ On-PolicyRemoveClick })
     $script:Ui['BtnPolicyDel'] = $b
 
