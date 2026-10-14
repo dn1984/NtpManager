@@ -6,7 +6,6 @@
 [![Windows 7+ / Server 2008 R2+](https://img.shields.io/badge/Windows-7%2B%20%2F%20Server%202008%20R2%2B-blue.svg)](#supported-windows-versions)
 [![No installation](https://img.shields.io/badge/installation-not%20required-success.svg)](#installation)
 [![License MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Syntax check](https://github.com/dn1984/NtpManager/actions/workflows/syntax-check.yml/badge.svg)](https://github.com/dn1984/NtpManager/actions/workflows/syntax-check.yml)
 
 [Русский](README.md) · **English**
 
@@ -422,7 +421,8 @@ CONTRIBUTING.md                     contribution rules and code requirements
 SECURITY.md                         security policy and vulnerability reporting
 LICENSE                             MIT license
 .gitignore                          what is kept out of the repository
-.github/workflows/syntax-check.yml  CI syntax check and smoke test
+.gitattributes                      line ending normalisation
+.github/ISSUE_TEMPLATE/             issue templates (bug report, feature request)
 ```
 
 ## License

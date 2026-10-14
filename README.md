@@ -6,7 +6,6 @@
 [![Windows 7+ / Server 2008 R2+](https://img.shields.io/badge/Windows-7%2B%20%2F%20Server%202008%20R2%2B-blue.svg)](#поддерживаемые-версии-windows)
 [![Установка не требуется](https://img.shields.io/badge/установка-не%20требуется-success.svg)](#установка)
 [![Лицензия MIT](https://img.shields.io/badge/лицензия-MIT-green.svg)](LICENSE)
-[![Проверка синтаксиса](https://github.com/dn1984/NtpManager/actions/workflows/syntax-check.yml/badge.svg)](https://github.com/dn1984/NtpManager/actions/workflows/syntax-check.yml)
 
 **Русский** · [English](README.en.md)
 
@@ -424,7 +423,8 @@ CONTRIBUTING.md                     правила участия и требо�
 SECURITY.md                         политика безопасности и порядок сообщений об уязвимостях
 LICENSE                             лицензия MIT
 .gitignore                          что не попадает в репозиторий
-.github/workflows/syntax-check.yml  проверка синтаксиса и дымовой тест в CI
+.gitattributes                      нормализация переводов строк
+.github/ISSUE_TEMPLATE/             шаблоны обращений (ошибка, предложение)
 ```
 
 ## Лицензия
