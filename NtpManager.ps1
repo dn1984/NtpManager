@@ -95,7 +95,7 @@ $ErrorActionPreference = 'Continue'
 # ---------------------------------------------------------------------------
 # Общие переменные
 # ---------------------------------------------------------------------------
-$script:Ver        = '1.5'
+$script:Ver        = '1.5.1'
 $script:SvcName    = 'w32time'
 $script:RegRoot    = 'SYSTEM\CurrentControlSet\Services\W32Time'
 $script:FwRuleName = 'NTP Server UDP 123 (NtpManager)'
@@ -428,8 +428,279 @@ $script:EnParts = @(
     @('Автоматически', 'Automatic'),
     @('Вручную', 'Manual'),
     @('Отключена', 'Disabled'),
-    @('ОК', 'OK')
+    @('Укажите адрес сервера для проверки.', 'Enter the server address to check.'),
+    @('Нужны права администратора. Перезапустите утилиту от имени администратора.', 'Administrator rights are required. Restart the utility as administrator.'),
+    @('Нужны права администратора.', 'Administrator rights are required.'),
+    @('Остановить службу времени Windows? Клиенты локальной сети перестанут получать время, а эта машина — синхронизироваться с GPS.', 'Stop the Windows Time service? LAN clients will stop receiving time and this machine will stop syncing with the GPS.'),
+    @('Перезапустить службу времени Windows? Это короткий разрыв синхронизации.', 'Restart the Windows Time service? This causes a short interruption in synchronisation.'),
+    @('Ветвь политики службы времени не найдена — удалять нечего.', 'The time service policy branch was not found — nothing to delete.'),
+    @('Для применения настроек нужны права администратора.', 'Administrator rights are required to apply the settings.'),
+    @('ОШИБКА: для применения настроек нужны права администратора.', 'ERROR: administrator rights are required to apply the settings.'),
+    @('Провайдер NTP-клиента включается, но список серверов времени пуст — машине не у кого брать время. Продолжить всё равно?', 'The NTP client provider is being enabled, but the peer list is empty, so the machine has no time source. Continue anyway?'),
+    @('Раздача времени клиентам будет ВЫКЛЮЧЕНА — клиенты локальной сети перестанут получать время с этой машины. Продолжить?', 'Serving time to clients will be DISABLED — LAN clients will stop receiving time from this machine. Continue?'),
+    @('Изменений не требуется: настройки уже соответствуют заданным.', 'No changes are needed: the settings already match.'),
+    @('Не забудьте указать адрес GPS-сервера в поле «Серверы времени», например: 192.168.1.50,0x9', 'Do not forget to enter the GPS server address in the peer list field, for example: 192.168.1.50,0x9'),
+    @('Не удалось сохранить настройки (проверьте права на папку).', 'Could not save the settings (check permissions on the folder).'),
+    @('Для импорта настроек нужны права администратора.', 'Administrator rights are required to import settings.'),
+    @('Настройки импортированы, служба времени перезапущена.', 'Settings imported; the time service has been restarted.'),
+    @('Для изменения брандмауэра нужны права администратора.', 'Administrator rights are required to change the firewall.'),
+    @('Правило уже существует.', 'The rule already exists.'),
+    @('Для команды /resync нужны права администратора.', 'Administrator rights are required for /resync.'),
+    @('Файл журнала ещё не создан.', 'The log file has not been created yet.'),
+    @('Будут применены изменения:', 'The following changes will be applied:'),
+    @('Будет создана резервная копия настроек (рег-файл) и перезапущена служба времени.', 'A backup of the settings (.reg file) will be created and the time service will be restarted.'),
+    @('Продолжить?', 'Continue?'),
+    @('Текущие настройки будут перезаписаны, служба времени будет остановлена и запущена заново. Продолжить?', 'The current settings will be overwritten and the time service will be stopped and started again. Continue?'),
+    @('Будет выполнено: w32tm /register, тип запуска «Автоматически», запуск службы.', 'The following will be done: w32tm /register, startup type Automatic, start the service.'),
+    @('Перед этим создаётся резервная копия ветви службы в рег-файл. После регистрации проверьте настройки на вкладке «Настройка» и при необходимости примените их.', 'A backup of the service registry branch is created beforehand. After registering, check the settings on the Settings tab and apply them if needed.'),
+    @('Восстановить (зарегистрировать заново) службу времени Windows?', 'Restore (re-register) the Windows Time service?'),
+    @('Служба СЕЙЧАС НЕ ЗАРЕГИСТРИРОВАНА — именно поэтому её не видно в списке служб.', 'The service is NOT REGISTERED at the moment — that is why it is missing from the service list.'),
+    @('Теперь на вкладке «Настройка» задайте раздачу времени и адрес GPS-сервера.', 'Now configure serving time and the GPS server address on the Settings tab.'),
+    @('Удалить ветвь групповой политики службы времени?', 'Delete the time service group policy branch?'),
+    @('Сейчас там заданы:', 'It currently contains:'),
+    @('Перед удалением ветвь будет сохранена в рег-файл (папка NtpManager-backup).', 'The branch will be saved to a .reg file first (NtpManager-backup folder).'),
+    @('Важно: если эти значения включает групповая политика (gpedit), они вернутся при следующем обновлении политики — тогда переведите нужные пункты в «Не задано».', 'Important: if a group policy (gpedit) sets these values, they will return at the next policy refresh — in that case set the relevant items to Not Configured.'),
+    @('Ветвь политики удалена. Параметры службы снова берутся из обычных ключей.', 'The policy branch has been deleted. The service settings come from the normal registry keys again.'),
+    @('Если после обновления политики они вернутся — настраивайте через gpedit.', 'If they return after a policy refresh, configure them through gpedit.'),
+    @('Выберите файл резервной копии настроек W32Time', 'Select a W32Time settings backup file'),
+    @('Импортировать настройки из файла:', 'Import settings from the file:'),
+    @('Файл gpedit.msc не найден (на Server Core редактор политик недоступен).', 'gpedit.msc was not found (the policy editor is unavailable on Server Core).'),
+    @('Настроить политику можно с другой машины или удалить ветвь политики кнопкой «Удалить ветвь политики...».', 'You can configure the policy from another machine or delete the policy branch with the "Delete the policy branch..." button.'),
+    @('Перезапустите утилиту вручную, чтобы применить язык.', 'Restart the utility manually to apply the language.'),
+    @('Перезапустить утилиту сейчас, чтобы применить?', 'Restart the utility now to apply it?'),
+    @('Запустите её вручную — язык уже сохранён.', 'Start it manually — the language has already been saved.'),
+    @('Не удалось перезапустить утилиту: ', 'Could not restart the utility: '),
+    @('Часть операций завершилась ошибкой:', 'Some operations failed:'),
+    @('Подробности — в журнале.', 'See the log for details.'),
+    @('При применении были ошибки:', 'There were errors while applying:'),
+    @('Проверьте состояние на вкладке «Состояние».', 'Check the state on the Status tab.'),
+    @('Готово. Применено изменений: ', 'Done. Changes applied: '),
+    @('Готово.', 'Done.'),
+    @('Применяю...', 'Applying...'),
+    @('Запустите окно утилиты двойным щелчком по NtpManager.cmd — оно запросит повышение прав само,', 'Start the utility window by double-clicking NtpManager.cmd — it requests elevation itself,'),
+    @('или запустите командную строку от имени администратора.', 'or run the command prompt as administrator.'),
+    @('Не удалось применить настройки: ', 'Could not apply the settings: '),
+    @('Не удалось сохранить файл: ', 'Could not save the file: '),
+    @('Не удалось скопировать: ', 'Could not copy: '),
+    @('Не удалось открыть gpedit.msc: ', 'Could not open gpedit.msc: '),
+    @('Не удалось удалить ветвь политики: ', 'Could not delete the policy branch: '),
+    @('Не удалось создать резервную копию: ', 'Could not create a backup: '),
+    @('Не удалось сохранить ветвь политики: ', 'Could not save the policy branch: '),
+    @('Не удалось сохранить настройки: ', 'Could not save the settings: '),
+    @('Не удалось добавить правило: ', 'Could not add the rule: '),
+    @('Не удалось удалить правило: ', 'Could not delete the rule: '),
+    @('Не удалось остановить службу: ', 'Could not stop the service: '),
+    @('Не удалось запустить службу: ', 'Could not start the service: '),
+    @('Не удалось изменить тип запуска: ', 'Could not change the startup type: '),
+    @('Не удалось записать отчёт в файл: ', 'Could not write the report to the file: '),
+    @('Не удалось открыть ключ реестра для записи: HKLM\', 'Could not open the registry key for writing: HKLM\'),
+    @('Не удалось создать ключ реестра: HKLM\', 'Could not create the registry key: HKLM\'),
+    @('Не удалось создать значок в области уведомлений: ', 'Could not create the tray icon: '),
+    @('Ошибка записи в реестр: ', 'Registry write error: '),
+    @('Реестр: ', 'Registry: '),
+    @('Брандмауэр: добавлено правило входящего UDP ', 'Firewall: added an inbound UDP rule '),
+    @('Брандмауэр: не удалось добавить правило: ', 'Firewall: could not add the rule: '),
+    @('Брандмауэр: правило не удалено: ', 'Firewall: the rule was not deleted: '),
+    @('Брандмауэр: правило для UDP ', 'Firewall: the rule for UDP '),
+    @('Брандмауэр: ', 'Firewall: '),
+    @('Правило брандмауэра: добавить входящее разрешение UDP ', 'Firewall rule: add an inbound allow rule for UDP '),
+    @('Правило брандмауэра: удалить разрешение UDP ', 'Firewall rule: delete the allow rule for UDP '),
+    @('Правило брандмауэра: не найдено, удалять нечего', 'Firewall rule: not found, nothing to delete'),
+    @('Правило брандмауэра: уже существует', 'Firewall rule: already exists'),
+    @('Удалить правило входящего UDP ', 'Delete the inbound UDP rule '),
+    @('Правило "', 'Rule "'),
+    @('--- Правило брандмауэра добавлено ---', '--- Firewall rule added ---'),
+    @('--- Правило брандмауэра ---', '--- Firewall rule ---'),
+    @(' удалено', ' deleted'),
+    @('Остановка службы: ', 'Stopping the service: '),
+    @('Запуск службы: ', 'Starting the service: '),
+    @('Перезапуск службы: ', 'Restarting the service: '),
+    @('Остановка: ', 'Stop: '),
+    @('Запуск: ', 'Start: '),
+    @('Служба времени запущена.', 'The time service has been started.'),
+    @('Служба времени остановлена.', 'The time service has been stopped.'),
+    @('Служба времени перезапущена.', 'The time service has been restarted.'),
+    @('Служба времени зарегистрирована и работает.', 'The time service is registered and running.'),
+    @('Служба времени зарегистрирована и запущена.', 'The time service has been registered and started.'),
+    @('Служба времени зарегистрирована: ', 'The time service has been registered: '),
+    @('Служба всё ещё не видна в списке служб.', 'The service is still missing from the service list.'),
+    @('Служба по-прежнему не видна в списке служб. Проверьте %windir%\system32\w32time.dll (sfc /scannow) и журнал утилиты.', 'The service is still missing from the service list. Check %windir%\system32\w32time.dll (sfc /scannow) and the utility log.'),
+    @('Проверьте файл %windir%\system32\w32time.dll (восстановить: sfc /scannow) и посмотрите журнал утилиты.', 'Check the file %windir%\system32\w32time.dll (restore with sfc /scannow) and look at the utility log.'),
+    @('ОШИБКА: файл %windir%\system32\w32time.dll не найден. Без него регистрация не поможет — восстановите файл (sfc /scannow) или с установочного диска.', 'ERROR: the file %windir%\system32\w32time.dll was not found. Registration will not help without it — restore the file (sfc /scannow) or from the installation media.'),
+    @('ОШИБКА: служба повреждена, нужен w32tm /register', 'ERROR: the service is damaged, w32tm /register is required'),
+    @('ОШИБКА: для восстановления службы нужны права администратора.', 'ERROR: administrator rights are required to restore the service.'),
+    @('Восстанавливаю регистрацию службы времени (w32tm /register)...', 'Re-registering the time service (w32tm /register)...'),
+    @('=== Восстановление службы времени (w32tm /register) ===', '=== Restoring the time service (w32tm /register) ==='),
+    @('Восстановление службы времени', 'Time service restoration'),
+    @('Удаление ветви политики', 'Deleting the policy branch'),
+    @('Подтверждение изменений', 'Confirm the changes'),
+    @('Справка NTP Manager', 'NTP Manager help'),
+    @('Сохранить вывод в файл', 'Save output to a file'),
+    @('Значения в реестре записаны.', 'The registry values have been written.'),
+    @('Параметры записаны также в ветвь групповой политики (SOFTWARE\Policies\Microsoft\W32Time).', 'The settings were also written to the group policy branch (SOFTWARE\Policies\Microsoft\W32Time).'),
+    @('Ветвь групповой политики службы времени удалена (резервная копия сохранена).', 'The time service group policy branch has been deleted (a backup was kept).'),
+    @('Создана резервная копия настроек: ', 'A settings backup has been created: '),
+    @('Резервная копия ветви политики: ', 'Policy branch backup: '),
+    @('Ключ TimeProviders\NtpServer отсутствовал и был создан заново.', 'The TimeProviders\NtpServer key was missing and has been recreated.'),
+    @('Ключ TimeProviders\NtpClient отсутствовал и был создан заново.', 'The TimeProviders\NtpClient key was missing and has been recreated.'),
+    @('Примечание: ключ TimeProviders\NtpServer пока отсутствует — включите провайдер NtpServer на вкладке «Настройка».', 'Note: the TimeProviders\NtpServer key is still missing — enable the NtpServer provider on the Settings tab.'),
+    @('Останавливаю службу времени для применения настроек...', 'Stopping the time service to apply the settings...'),
+    @('Служба не перезапускалась (ключ -NoRestart): новый провайдер заработает после перезапуска службы.', 'The service was not restarted (the -NoRestart switch): the new provider takes effect after the next service restart.'),
+    @('Состояние службы изменилось: ', 'The service state changed: '),
+    @('NTP-сервер не отвечает на запросы — проверьте состояние', 'The NTP server does not answer requests — check the state'),
+    @('NTP-сервер не отвечает на запрос: ', 'The NTP server does not answer the request: '),
+    @('NTP: служба ', 'NTP: service '),
+    @('Окно свёрнуто в область уведомлений (утилита продолжает мониторинг).', 'The window has been minimised to the tray (the utility keeps monitoring).'),
+    @('Открыт редактор локальной групповой политики.', 'The Local Group Policy Editor has been opened.'),
+    @('Вывод скопирован в буфер обмена.', 'The output has been copied to the clipboard.'),
+    @('Вывод сохранён в ', 'Output saved to '),
+    @('Файл не найден: ', 'File not found: '),
+    @('Полный текстовый отчёт записан в файл: ', 'The full text report has been written to: '),
+    @('Настройки сохранены в файл: ', 'Settings saved to: '),
+    @('Настройки сохранены:', 'Settings saved:'),
+    @('Настройки импортированы из ', 'Settings imported from '),
+    @('Применение отменено пользователем.', 'Applying was cancelled by the user.'),
+    @('Работа завершена.', 'Finished.'),
+    @('Запуск графического интерфейса. Права администратора: ', 'Starting the graphical interface. Administrator rights: '),
+    @('Повышение прав не выполнено (', 'Elevation was not performed ('),
+    @('). Работаем в режиме просмотра.', '). Running in view-only mode.'),
+    @('ВНИМАНИЕ: утилита запущена без прав администратора — доступен только просмотр.', 'WARNING: the utility is running without administrator rights — view only.'),
+    @('Не указано ни одного изменения. Пример:', 'No changes were specified. Example:'),
+    @('Планируемые изменения:', 'Planned changes:'),
+    @('Предпросмотр: изменений ', 'Preview: changes '),
+    @('. Записи в систему НЕ выполнялись.', '. Nothing was written to the system.'),
+    @('Изменений больше не требуется.', 'No further changes are needed.'),
+    @('Изменений не требуется — настройки уже такие.', 'No changes are needed — the settings already match.'),
+    @('ВЕТВЬ ПОЛИТИКИ: те же параметры будут записаны и в HKLM\SOFTWARE\Policies\Microsoft\W32Time (Config, Parameters, TimeProviders) — именно эти значения имеет приоритет, если служба управляется политикой', 'POLICY BRANCH: the same settings will also be written to HKLM\SOFTWARE\Policies\Microsoft\W32Time (Config, Parameters, TimeProviders) — those values take precedence when the service is governed by policy'),
+    @('ВНИМАНИЕ: параметры службы времени заданы групповой политикой и перекрывают реестр: ', 'WARNING: the time service settings are set by group policy and override the registry: '),
+    @('Изменения утилиты будут действовать только после отмены политики: gpedit.msc → Административные шаблоны → Система → Служба времени Windows → перевести нужные пункты в «Не задано» (или удалить ветвь реестра HKLM\SOFTWARE\Policies\Microsoft\W32Time).', 'The utility changes take effect only after the policy is removed: gpedit.msc → Administrative Templates → System → Windows Time Service → set the relevant items to Not Configured (or delete the registry branch HKLM\SOFTWARE\Policies\Microsoft\W32Time).'),
+    @('ВНИМАНИЕ: у адреса ', 'WARNING: the address '),
+    @(' не указан флаг — служба будет опрашивать источник по своему расписанию (64–1024 с), а не по заданному интервалу опроса. Включите галочку «дописывать флаг ,0x9 самому».', ' has no flag — the service will poll the source on its own schedule (64–1024 s) instead of the configured poll interval. Tick the "append the ,0x9 flag automatically" box.'),
+    @('Заполнены рекомендуемые значения. Ничего не применялось — проверьте адрес GPS-сервера и нажмите «ПРИМЕНИТЬ НАСТРОЙКИ».', 'The recommended values have been filled in. Nothing was applied — check the GPS server address and press APPLY SETTINGS.'),
+    @('Провайдер NtpServer (раздача времени в сеть): ', 'NtpServer provider (serving time to the network): '),
+    @('Провайдер NtpClient (получение времени): ', 'NtpClient provider (obtaining time): '),
+    @('AllowNonstandardModeCombinations (совместимость с нестандартными клиентами): ', 'AllowNonstandardModeCombinations (compatibility with non-standard clients): '),
+    @('Параметры\Type (тип источника времени): ', 'Parameters\Type (time source type): '),
+    @('Параметры\NtpServer (список серверов времени): "', 'Parameters\NtpServer (peer list): "'),
+    @('SpecialPollInterval (интервал опроса сервера времени): ', 'SpecialPollInterval (poll interval of the time server): '),
+    @('MaxAllowedPhaseOffset (порог исправления смещения): ', 'MaxAllowedPhaseOffset (phase correction threshold): '),
+    @('EventLogFlags (подробность журнала событий): ', 'EventLogFlags (event log verbosity): '),
+    @('Тип запуска службы: ', 'Service startup type: '),
+    @('10 = обычный участник', '10 = ordinary domain member'),
+    @(' = надёжный источник времени)', ' = reliable time source)'),
+    @('Вывод        : сервер отвечает на NTP-запросы', 'Result       : the server answers NTP requests'),
+    @('Вывод        : сервер не ответил на запросы — проверьте сеть и входящий UDP 123 на нём', 'Result       : the server did not answer — check the network and inbound UDP 123 on it'),
+    @('  Что проверить: доступность узла (ping), запущена ли служба времени на нём,', '  What to check: host reachability (ping), whether the time service runs on it,'),
+    @('  открыт ли входящий UDP 123 в брандмауэре сервера.', '  and whether inbound UDP 123 is open in its firewall.'),
+    @('  (1 — первичный источник, например GPS)', '  (1 — primary source, for example GPS)'),
+    @('Отклик       : есть, успешных замеров ', 'Answer       : yes, successful samples '),
+    @('Отклик       : НЕТ', 'Answer       : NO'),
+    @('Задержка d:  : ', 'Delay d:     : '),
+    @('Смещение o:  : ', 'Offset o:    : '),
+    @(' мс (знак — как в выводе w32tm)', ' ms (sign as in the w32tm output)'),
+    @('Сырой вывод w32tm:', 'Raw w32tm output:'),
+    @('Примечание: встроенный SNTP-клиент недоступен в этом сеансе PowerShell (', 'Note: the built-in SNTP client is unavailable in this PowerShell session ('),
+    @('Проверка выполнена системной утилитой w32tm /stripchart: без stratum и идентификатора источника.', 'The check was performed by the system utility w32tm /stripchart: without stratum and reference ID.'),
+    @('ВНИМАНИЕ: сервер отвечает, но помечает себя несинхронизированным (LI=', 'WARNING: the server answers but marks itself as unsynchronised (LI='),
+    @('  Клиенты обычно игнорируют такое время — проверьте на сервере источник GPS.', '  Clients usually ignore such time — check the GPS source on that server.'),
+    @('Никто не слушает — NTP-сервер не отвечает клиентам.', 'Nobody is listening — the NTP server does not answer clients.'),
+    @('--- Кто слушает UDP ', '--- Who listens on UDP '),
+    @('--- w32tm /resync (код ', '--- w32tm /resync (exit code '),
+    @('--- w32tm /resync /rediscover (код ', '--- w32tm /resync /rediscover (exit code '),
+    @('--- Последние события источника W32Time (журнал System) ---', '--- Latest events from the W32Time source (System log) ---'),
+    @('Записей нет. Это нормально, если служба давно работает без сбоев.', 'No records. That is normal when the service has been running without failures for a long time.'),
+    @('--- Стабильность ответов ', '--- Response stability of '),
+    @('Получено ответов: ', 'Answers received: '),
+    @('Средняя задержка обмена: ', 'Average round-trip delay: '),
+    @('Разброс смещения: ', 'Offset spread: '),
+    @('Смещение: мин ', 'Offset: min '),
+    @(' мс, среднее ', ' ms, average '),
+    @(' мс, макс ', ' ms, max '),
+    @(', потеряно: ', ', lost: '),
+    @(' запросов) ---', ' requests) ---'),
+    @('? Клиенты локальной сети могут перестать получать время.', '? LAN clients may stop receiving time.'),
+    @('Служба не перешла в состояние «Работает» за отведённое время', 'The service did not reach the Running state within the timeout'),
+    @('Служба не перешла в состояние «Остановлена» за отведённое время', 'The service did not reach the Stopped state within the timeout'),
+    @('Неизвестный тип запуска: ', 'Unknown startup type: '),
+    @('sc.exe config вернул код ', 'sc.exe config returned code '),
+    @(' -> код ', ' -> exit code '),
+    @('/update -> код ', '/update -> exit code '),
+    @('w32tm /register -> код ', 'w32tm /register -> exit code '),
+    @('Порт UDP ', 'Port UDP '),
+    @('Ответ короче 48 байт', 'The answer is shorter than 48 bytes'),
+    @('проверка не выполнялась', 'the check was not performed'),
+    @('... (обрезано)', '... (truncated)'),
+    @('   ... (обрезано)', '   ... (truncated)'),
+    @(' Вывод w32tm /query /configuration (первые 60 строк):', ' w32tm /query /configuration output (first 60 lines):'),
+    @('--- Источник времени ', '--- Time source '),
+    @(' (проверка через w32tm) ---', ' (checked with w32tm) ---'),
+    @(' (изменений не требуется — настройки уже такие)', ' (no changes needed — the settings already match)'),
+    @('Запуск без ключей        — графический интерфейс (права администратора запрашиваются сами).', 'No switches              — graphical interface (administrator rights are requested automatically).'),
+    @('Ключ -Report             — текстовая проверка состояния, ничего не меняет, без прав администратора.', 'Switch -Report           — text status check, changes nothing, administrator rights not needed.'),
+    @('                           Код возврата: 0 — норма, 1 — замечания, 2 — ошибки.', '                           Exit code: 0 — fine, 1 — warnings, 2 — errors.'),
+    @('Ключ -Apply              — применить настройки (нужны права администратора) вместе с:', 'Switch -Apply            — apply the settings (administrator rights required) together with:'),
+    @('   -ServerList "192.168.1.50,0x9"   список серверов времени (GPS), через пробел для нескольких', '   -ServerList "192.168.1.50,0x9"   peer list (GPS), space-separated for several peers'),
+    @('   -PollInterval 300                интервал опроса, секунды', '   -PollInterval 300                poll interval, seconds'),
+    @('   -EnableServer | -DisableServer   включить/выключить раздачу времени клиентам', '   -EnableServer | -DisableServer   enable/disable serving time to clients'),
+    @('   -EnableClient | -DisableClient   включить/выключить получение времени', '   -EnableClient | -DisableClient   enable/disable obtaining time'),
+    @('   -Reliable | -NotReliable         помечать ли машину надёжным источником (AnnounceFlags)', '   -Reliable | -NotReliable         mark the machine as a reliable time source (AnnounceFlags)'),
+    @('   -OpenFirewall | -RemoveFirewall  разрешить/закрыть входящий UDP 123 в брандмауэре', '   -OpenFirewall | -RemoveFirewall  allow/close inbound UDP 123 in the firewall'),
+    @('   -MaxAllowedPhaseOffset 3600      порог исправления смещения, секунды', '   -MaxAllowedPhaseOffset 3600      phase correction threshold, seconds'),
+    @('   -EventLogFlags 2                 подробность журнала событий службы', '   -EventLogFlags 2                 Windows Time event log verbosity'),
+    @('   -NoRestart                       не перезапускать службу после записи настроек', '   -NoRestart                       do not restart the service after writing settings'),
+    @('Ключ -RestoreService     — зарегистрировать службу времени заново (w32tm /register), когда её не видно в списке служб.', 'Switch -RestoreService   — re-register the time service (w32tm /register) when it is missing from the service list.'),
+    @('Ключ -Apply -UsePolicyBranch — дополнительно записать параметры в ветвь групповой политики.', 'Switch -Apply -UsePolicyBranch — also write the settings to the group policy branch.'),
+    @('Ключ -Language en|ru        — язык интерфейса и отчёта (ru | en).', 'Switch -Language en|ru   — interface and report language (ru | en).'),
+    @('Ключ -Help               — эта справка.', 'Switch -Help             — this help.'),
+    @('Примеры:', 'Examples:'),
+    @(' — мониторинг и управление NTP на Windows Server 2008 R2', ' — NTP monitoring and management on Windows Server 2008 R2'),
+    @('ИТОГ: ', 'SUMMARY: '),
+    @(' (ок: ', ' (ok: '),
+    @(', замечаний: ', ', warnings: '),
+    @(', ошибок: ', ', errors: '),
+    @('Код возврата: ', 'Exit code: '),
+    @(' (0 — всё в норме, 1 — замечания, 2 — ошибки)', ' (0 — all fine, 1 — warnings, 2 — errors)'),
+    @(' — отчёт о состоянии (', ' — status report ('),
+    @('Вывод w32tm /query /status:', 'w32tm /query /status output:'),
+    @('Серверы времени в настройках не указаны — внешний источник не проверялся.', 'No time servers are configured — the external source was not checked.'),
+    @('Файлы: настройки — ', 'Files: settings — '),
+    @('Журнал : ', 'Log    : '),
+    @('Резервные копии — ', 'Backups — '),
+    @('ВНИМАНИЕ: часть запросов потеряна — возможны потери в сети или блокировка UDP 123.', 'WARNING: some requests were lost — possible network loss or UDP 123 blocking.'),
+    @('ОК', 'OK'),
+    @('Для изменения настроек нужны права администратора.', 'Administrator rights are required to change the settings.'),
+    @('Время сервера UTC : сервер не вернул метку передачи', 'Server time UTC  : the server did not return a transmit timestamp'),
+    @('Текстовые файлы (*.txt)|*.txt|Все файлы (*.*)|*.*', 'Text files (*.txt)|*.txt|All files (*.*)|*.*'),
+    @('Рег-файлы (*.reg)|*.reg|Все файлы (*.*)|*.*', 'Registry files (*.reg)|*.reg|All files (*.*)|*.*'),
+    @('Parameters\NtpServer (список серверов времени): "', 'Parameters\NtpServer (peer list): "'),
+    @('Parameters\Type (тип источника времени): ', 'Parameters\Type (time source type): '),
+    @('  (изменений не требуется — настройки уже такие)', '  (no changes needed — the settings already match)'),
+    @('ветвь политики не найдена — удалять нечего', 'policy branch not found — nothing to delete'),
+    @('ВНИМАНИЕ: включён, хотя не требуется', 'WARNING: enabled although not required'),
+    @('Язык интерфейса сохранён: русский.', 'Interface language saved: Russian.'),
+    @('=== Проверка серверов времени ===', '=== Checking time servers ==='),
+    @('PID службы времени (w32time): ', 'Windows Time service PID (w32time): '),
+    @('Не удалось добавить правило:', 'Could not add the rule:'),
+    @('Не удалось удалить правило:', 'Could not delete the rule:'),
+    @('Брандмауэр: правило UDP ', 'Firewall: UDP rule '),
+    @(' • Резервные копии: ', ' • Backups: '),
+    @(' — краткая справка', ' — quick help'),
+    @('Импорт не удался: ', 'Import failed: '),
+    @('Источник времени ', 'Time source '),
+    @(', учётная запись ', ', account '),
+    @('Служба времени: ', 'Time service: '),
+    @(' • Настройки: ', ' • Settings: '),
+    @(' • Журнал: ', ' • Log: '),
+    @('Тип запуска: ', 'Startup type: '),
+    @(': смещение ', ': offset '),
+    @('не найден', 'not found'),
+    @(', режим ', ', mode '),
+    @(' пусто', ' blank')
 )
+
+# Фрагменты проверяются от длинных к коротким: иначе короткий обрывок (например,
+# «администратора») сработает раньше целой фразы и испортит перевод предложения.
+$script:EnPartsSorted = @($script:EnParts | Sort-Object { -($_[0].Length) })
 
 function T {
     param([string]$Text)
@@ -438,6 +709,11 @@ function T {
     if ($script:EnUi.ContainsKey($Text)) { return $script:EnUi[$Text] }
     if ($script:EnTips.ContainsKey($Text)) { return $script:EnTips[$Text] }
     if ($script:EnDyn.ContainsKey($Text)) { return $script:EnDyn[$Text] }
+    # Точное совпадение с длинной фразой из списка фрагментов: важно проверять его ДО
+    # пофрагментной замены, иначе короткий обрывок сработает раньше целого предложения.
+    foreach ($pair in $script:EnParts) {
+        if ($pair[0] -eq $Text) { return $pair[1] }
+    }
     return $Text
 }
 
@@ -446,8 +722,9 @@ function TPart {
     param([string]$Text)
     if ($Text -eq $null) { return $Text }
     if ($script:Lang -ne 'en') { return $Text }
+    if ($Text.IndexOfAny([char[]]('АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя')) -lt 0) { return $Text }
     $out = [string]$Text
-    foreach ($pair in $script:EnParts) {
+    foreach ($pair in $script:EnPartsSorted) {
         if ($out.IndexOf($pair[0]) -ge 0) { $out = $out.Replace($pair[0], $pair[1]) }
     }
     # Единицы измерения после числа: «300 с» -> «300 s» (безопасно, только сразу после цифры).
@@ -552,7 +829,7 @@ function Write-LogToUi {
 
 function Add-Log {
     param([string]$Message, [string]$Level = 'INFO')
-    $Message = TPart $Message
+    $Message = TPart (T $Message)
     $line = '{0} [{1}] {2}' -f (Get-Date).ToString('yyyy-MM-dd HH:mm:ss'), $Level, $Message
     $script:LogWrites = $script:LogWrites + 1
     try {
@@ -600,6 +877,13 @@ function Invoke-Exe {
         $psi.RedirectStandardOutput = $true
         $psi.RedirectStandardError  = $true
         $psi.CreateNoWindow         = $true
+        # Консольные утилиты (w32tm, netsh, netstat) пишут в OEM-кодировке: без этого
+        # русский текст их вывода превращался в мусор в отчёте и в файле отчёта.
+        try {
+            $oem = [System.Text.Encoding]::GetEncoding([int][System.Globalization.CultureInfo]::CurrentCulture.TextInfo.OEMCodePage)
+            $psi.StandardOutputEncoding = $oem
+            $psi.StandardErrorEncoding  = $oem
+        } catch { }
         $proc = New-Object System.Diagnostics.Process
         $proc.StartInfo = $psi
         [void]$proc.Start()
@@ -1957,7 +2241,7 @@ function New-StatusRow {
     param([string]$Item, [string]$Value, [string]$Verdict, [string]$Level = 'info')
     if ($script:Lang -eq 'en') {
         $Item = TPart (T $Item)
-        $Value = TPart $Value
+        $Value = TPart (T $Value)
         $Verdict = TPart (T $Verdict)
     }
     return New-Object PSObject -Property @{ Item = $Item; Value = $Value; Verdict = $Verdict; Level = $Level }
@@ -2563,17 +2847,17 @@ function Set-PreviewText {
 
 function Show-Info {
     param([string]$Text, [string]$Title = 'NTP Manager')
-    [void][System.Windows.Forms.MessageBox]::Show((TPart $Text), $Title, [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+    [void][System.Windows.Forms.MessageBox]::Show((TPart (T $Text)), $Title, [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
 }
 
 function Show-Error {
     param([string]$Text, [string]$Title = 'NTP Manager')
-    [void][System.Windows.Forms.MessageBox]::Show((TPart $Text), $Title, [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+    [void][System.Windows.Forms.MessageBox]::Show((TPart (T $Text)), $Title, [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
 }
 
 function Ask-Confirm {
     param([string]$Text, [string]$Title = 'NTP Manager')
-    $r = [System.Windows.Forms.MessageBox]::Show((TPart $Text), $Title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+    $r = [System.Windows.Forms.MessageBox]::Show((TPart (T $Text)), $Title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
     return ($r -eq [System.Windows.Forms.DialogResult]::Yes)
 }
 
@@ -3060,7 +3344,7 @@ function Show-TrayBalloon {
     if (-not (Get-UiBool 'ChkTray')) { return }
     try {
         $tray.Visible = $true
-        $tray.ShowBalloonTip(8000, $Title, $Text, [System.Windows.Forms.ToolTipIcon]::Warning)
+        $tray.ShowBalloonTip(8000, $Title, (TPart $Text), [System.Windows.Forms.ToolTipIcon]::Warning)
     } catch { }
 }
 
@@ -3768,8 +4052,57 @@ function On-TextReportClick {
     if ($script:Ui['Tabs'] -ne $null) { $script:Ui['Tabs'].SelectedIndex = 3 }
 }
 
+function Get-HelpTextEn {
+    $nl = [Environment]::NewLine
+    $t = New-Object System.Text.StringBuilder
+    [void]$t.AppendLine('NTP Manager ' + $script:Ver + ' — quick help')
+    [void]$t.AppendLine('')
+    [void]$t.AppendLine('PURPOSE: serve time to local network clients (NTP server) and obtain time from a GPS')
+    [void]$t.AppendLine('server (NTP client), and monitor the state of the Windows Time service.')
+    [void]$t.AppendLine('')
+    [void]$t.AppendLine('SETTINGS TAB - what each field means:')
+    [void]$t.AppendLine(' • Enable the NtpServer provider - the machine answers NTP requests from network clients.')
+    [void]$t.AppendLine(' • Non-standard mode combinations - also answer clients that do not follow the standard strictly.')
+    [void]$t.AppendLine(' • Reliable time source (AnnounceFlags = 5) - how a time server is marked in a domain.')
+    [void]$t.AppendLine(' • Enable the NtpClient provider - the machine takes its time from the server below.')
+    [void]$t.AppendLine(' • Time source type: "Manual peer list (NTP)" is what you need for GPS; "Domain hierarchy" takes time from Active Directory.')
+    [void]$t.AppendLine(' • GPS server address - an IP address is enough (192.168.1.50): the checkbox next to it appends the ,0x9 flag.')
+    [void]$t.AppendLine('   The 0x9 flag = 0x1 (use the configured poll interval) + 0x8 (client mode).')
+    [void]$t.AppendLine('   Without the flag the service polls the source on its own schedule (64-1024 s) and the interval field has no effect.')
+    [void]$t.AppendLine(' • Poll interval, s (SpecialPollInterval) - how often to ask the GPS: 60-900 on a local network.')
+    [void]$t.AppendLine(' • Service startup type - a time server needs "Automatic".')
+    [void]$t.AppendLine(' • Allow inbound UDP 123 - a firewall rule; without it clients get no time.')
+    [void]$t.AppendLine(' • Max single clock offset, s (MaxAllowedPhaseOffset) - if the difference is larger, the service will not')
+    [void]$t.AppendLine('   catch up in one step but logs an error. Blank means leave unchanged (300 by default).')
+    [void]$t.AppendLine(' • EventLogFlags - verbosity of Windows Time records in the System log: 0..3. Blank means leave unchanged.')
+    [void]$t.AppendLine(' • "Preview changes" shows the list of edits and changes nothing on the system.')
+    [void]$t.AppendLine('')
+    [void]$t.AppendLine('DIAGNOSTICS TAB - what the buttons do (they wrap w32tm):')
+    [void]$t.AppendLine(' • Synchronisation status - w32tm /query /status: source, last successful sync, offset.')
+    [void]$t.AppendLine(' • Effective settings - /query /configuration: the parameters the service uses now.')
+    [void]$t.AppendLine(' • Time sources - /query /peers: the list of sources and their state.')
+    [void]$t.AppendLine(' • Samples from server (5) - /stripchart: d: delay, o: clock offset.')
+    [void]$t.AppendLine(' • Service events - the latest Windows Time records from the System log.')
+    [void]$t.AppendLine(' • Synchronise now - /resync; Rediscover sources - /resync /rediscover.')
+    [void]$t.AppendLine(' • Who listens on port 123 - which process actually holds UDP 123 (important: a foreign process')
+    [void]$t.AppendLine('   on the port means the built-in server cannot answer clients).')
+    [void]$t.AppendLine(' • Firewall rule: show / Allow UDP 123 / Delete rule.')
+    [void]$t.AppendLine(' • Check 127.0.0.1 - whether the NTP server on this machine answers; "Check this server"')
+    [void]$t.AppendLine('   from a client machine - whether the server is reachable over the network including the firewall.')
+    [void]$t.AppendLine('')
+    [void]$t.AppendLine('OTHER:')
+    [void]$t.AppendLine(' • F5 - refresh the state. Double-click the tray icon - show the window.')
+    [void]$t.AppendLine(' • Hover any control to see a tooltip.')
+    [void]$t.AppendLine(' • Language selector (top panel) - Russian or English, applied after a restart.')
+    [void]$t.AppendLine(' • Log: ' + $script:LogFile)
+    [void]$t.AppendLine(' • Settings: ' + $script:SettingsFile)
+    [void]$t.AppendLine(' • Backups: ' + $script:BackupDir)
+    return $t.ToString()
+}
+
 function On-HelpClick {
     $nl = [Environment]::NewLine
+    if ($script:Lang -eq 'en') { Show-Info (Get-HelpTextEn) 'NTP Manager — help'; return }
     $t = New-Object System.Text.StringBuilder
     [void]$t.AppendLine('NTP Manager ' + $script:Ver + ' — краткая справка')
     [void]$t.AppendLine('')
@@ -3812,7 +4145,7 @@ function On-HelpClick {
     [void]$t.AppendLine(' • Журнал: ' + $script:LogFile)
     [void]$t.AppendLine(' • Настройки: ' + $script:SettingsFile)
     [void]$t.AppendLine(' • Резервные копии: ' + $script:BackupDir)
-    Show-Info $t.ToString() 'Справка NTP Manager'
+    Show-Info $t.ToString() (T 'Справка NTP Manager')
 }
 
 function On-OpenLogClick {

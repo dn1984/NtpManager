@@ -412,7 +412,10 @@ blank service rows, and time service events are read both from the modern
 
 Localization was verified in both languages: a headless test builds the window in Russian and in English
 (title, tabs, buttons, check boxes, table headers, tooltips, list items), and `-Report -Language en`
-produces a fully English report while the default Russian output is unchanged.
+produces a fully English report while the default Russian output is unchanged. Dictionary coverage is
+checked by a separate test that walks every Russian literal in the script and reports those without an
+English translation; in the current version only the lines of the Russian help text (English mode shows
+its own English text) and the language name "Русский" in the selector remain untranslated.
 
 **Not verified on a live system:** writing values to the registry and to the policy branch, restarting the
 service, adding a firewall rule, running `w32tm /register`, and exchanging time with a real GPS server
