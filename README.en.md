@@ -1,4 +1,4 @@
-﻿# NtpManager 1.4
+﻿# NtpManager 1.5
 
 **Portable monitoring and management tool for the Windows Time service (w32time): an NTP server for the local network plus an NTP client that takes its time from a GPS time server.**
 
@@ -68,7 +68,9 @@ server (or to a USB stick) and double-click.
 - group policy detection: shows whether the settings are enforced by policy (policy wins over the registry);
 - a lightweight auto-refresh (~50 ms: service and registry) and a full check on demand or every 10 minutes;
 - tray icon and balloon notifications when the service state changes;
-- activity log with rotation.
+- activity log with rotation;
+- **two interface languages** — Russian and English: a selector in the window and the `-Language`
+  switch; the system language is used by default.
 
 **Management**
 
@@ -193,6 +195,11 @@ Full example:
 NtpManager.cmd -Apply -ServerList "192.168.1.50,0x9" -EnableServer -EnableClient ^
     -Reliable -PollInterval 300 -OpenFirewall
 ```
+
+The interface and report language is set with the `-Language ru|en` switch or the **Language** selector in
+the window (applied after the utility restarts); by default the system language is used: Russian Windows
+gives Russian, anything else gives English. Both the window and the report/log text are translated; output
+produced by Windows itself (`w32tm`) is shown as is.
 
 ## Exit codes
 
@@ -402,6 +409,10 @@ body once, `@($null)` yields a single empty element) no longer produce false por
 blank service rows, and time service events are read both from the modern
 `Microsoft-Windows-Time-Service` provider (Windows 10/11) and from the classic `W32Time` source
 (Windows Server 2008 R2 / 7), so the status row shows a real dated event on both platforms.
+
+Localization was verified in both languages: a headless test builds the window in Russian and in English
+(title, tabs, buttons, check boxes, table headers, tooltips, list items), and `-Report -Language en`
+produces a fully English report while the default Russian output is unchanged.
 
 **Not verified on a live system:** writing values to the registry and to the policy branch, restarting the
 service, adding a firewall rule, running `w32tm /register`, and exchanging time with a real GPS server
