@@ -1,0 +1,65 @@
+name: Syntax check
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  checks:
+    name: Parse and smoke test
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse NtpManager.ps1 (PowerShell 5.1)
+        shell: pwsh
+        run: |
+          $errors = $null
+          $text = [System.IO.File]::ReadAllText("$PWD/NtpManager.ps1", (New-Object System.Text.UTF8Encoding($false)))
+          [void][System.Management.Automation.PSParser]::Tokenize($text, [ref]$errors)
+          if ($errors.Count -gt 0) {
+            foreach ($e in $errors) { Write-Host ("line $($e.Token.StartLine): $($e.Message)") }
+            Write-Error "Syntax errors: $($errors.Count)"
+            exit 1
+          }
+          Write-Host "Syntax OK"
+
+      - name: Check UTF-8 BOM in NtpManager.ps1
+        shell: pwsh
+        run: |
+          $bytes = [System.IO.File]::ReadAllBytes("$PWD/NtpManager.ps1")
+          if (-not ($bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF)) {
+            Write-Error "NtpManager.ps1 must be UTF-8 with BOM: PowerShell 2.0 reads files without BOM as ANSI and breaks non-ASCII text."
+            exit 1
+          }
+          Write-Host "BOM OK"
+
+      - name: Check that launchers are ASCII only
+        shell: pwsh
+        run: |
+          foreach ($f in @('NtpManager.cmd', 'NtpManager-Report.cmd')) {
+            $bytes = [System.IO.File]::ReadAllBytes("$PWD/$f")
+            $bad = 0
+            foreach ($b in $bytes) { if ($b -gt 127) { $bad++ } }
+            if ($bad -gt 0) { Write-Error "$f contains $bad non-ASCII bytes; cmd.exe renders text in the OEM code page."; exit 1 }
+            Write-Host "$f is ASCII only"
+          }
+
+      - name: Smoke test (-Report)
+        shell: pwsh
+        run: |
+          $script = Join-Path $PWD 'NtpManager.ps1'
+          $argLine = '-NoProfile -ExecutionPolicy Bypass -File "' + $script + '" -Report'
+          $p = Start-Process -FilePath 'powershell.exe' -ArgumentList $argLine -Wait -PassThru -NoNewWindow
+          # 0/1/2 mean the report was produced (0 ok, 1 warnings, 2 errors on the runner).
+          # 3 and above mean the script failed to start.
+          Write-Host "Report exit code: $($p.ExitCode)"
+          if ($p.ExitCode -gt 2) {
+            Write-Error "Report mode failed with exit code $($p.ExitCode)"
+            exit 1
+          }
+          Write-Host "Report mode OK"
