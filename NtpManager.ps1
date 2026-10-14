@@ -2,8 +2,8 @@
 <#
     NtpManager.ps1 - версия 1.4
     ---------------------------------------------------------------------------
-    Портативная утилита для Windows Server 2008 R2 (и совместимых версий Windows):
-    мониторинг и управление службой времени Windows (w32time), в которой эта
+    Портативная утилита для Windows 7 / Windows Server 2008 R2 и новее (включая Windows 10/11
+    и Windows Server 2012–2025): мониторинг и управление службой времени Windows (w32time), в которой эта
     машина одновременно:
 
       * NTP-СЕРВЕР  - отдаёт время клиентам в локальной сети (провайдер NtpServer);
@@ -684,7 +684,11 @@ function Get-ServicesInProcess {
     $names = New-Object System.Collections.ArrayList
     try {
         $svcs = Get-WmiObject Win32_Service -Filter ("ProcessId=" + $ProcessId) -ErrorAction SilentlyContinue
-        foreach ($s in $svcs) { [void]$names.Add([string]$s.Name) }
+        foreach ($s in @($svcs)) {
+            if ($s -eq $null) { continue }
+            $nm = [string]$s.Name
+            if ($nm -ne '') { [void]$names.Add($nm) }
+        }
     } catch { }
     $o = New-Object PSObject -Property @{ Time = (Get-Date); Names = $names.ToArray() }
     $script:SlowCache[$key] = $o
@@ -1473,15 +1477,30 @@ function Save-Settings {
 function Get-W32TimeEvents {
     param([int]$Max = 8)
     $out = New-Object System.Collections.ArrayList
+    # 1) Современный поставщик событий (Windows 8 / Server 2012 и новее, включая Windows 10/11).
+    #    Используется -FilterXPath, а не -FilterHashtable: последний появился только в PowerShell 3.0,
+    #    а утилита должна работать и в PowerShell 2.0 (Windows Server 2008 R2).
     try {
-        $ev = Get-EventLog -LogName System -Source 'W32Time' -Newest $Max -ErrorAction SilentlyContinue
-        if ($ev -ne $null) {
-            foreach ($e in $ev) {
+        $ev = Get-WinEvent -LogName System -FilterXPath "*[System[Provider[@Name='Microsoft-Windows-Time-Service']]]" -MaxEvents $Max -ErrorAction Stop
+        foreach ($e in @($ev)) {
+            if ($e -eq $null) { continue }
+            $msg = ''
+            try { $msg = [string]$e.Message } catch { }
+            $o = New-Object PSObject -Property @{ Time = $e.TimeCreated; Id = $e.Id; Source = [string]$e.ProviderName; Message = $msg }
+            [void]$out.Add($o)
+        }
+    } catch { }
+    # 2) Классический источник W32Time (Windows Server 2008 R2 / Windows 7).
+    if ($out.Count -eq 0) {
+        try {
+            $ev2 = Get-EventLog -LogName System -Source 'W32Time' -Newest $Max -ErrorAction SilentlyContinue
+            foreach ($e in @($ev2)) {
+                if ($e -eq $null) { continue }
                 $o = New-Object PSObject -Property @{ Time = $e.TimeGenerated; Id = $e.EventID; Source = [string]$e.Source; Message = [string]$e.Message }
                 [void]$out.Add($o)
             }
-        }
-    } catch { }
+        } catch { }
+    }
     if ($out.Count -eq 0) {
         # Дорогой путь (перебор всего журнала System) выполняется не чаще раза в 10 минут:
         # иначе каждое автообновление окна перечитывает сотни событий и интерфейс подвисает.
@@ -1514,9 +1533,13 @@ function Get-ConflictingServices {
     $res = New-Object System.Collections.ArrayList
     try {
         $svc = Get-WmiObject -Query "SELECT Name,DisplayName,State FROM Win32_Service WHERE Name LIKE '%ntp%'" -ErrorAction SilentlyContinue
-        foreach ($s in $svc) {
-            if ([string]$s.Name -eq $script:SvcName) { continue }
-            $o = New-Object PSObject -Property @{ Name = [string]$s.Name; DisplayName = [string]$s.DisplayName; State = [string]$s.State }
+        # Важно: в PowerShell 2.0 foreach по $null выполняет тело один раз с $null, поэтому пустой
+        # ответ WMI давал «пустую службу» и ложное предупреждение о конфликте за порт 123.
+        foreach ($s in @($svc)) {
+            if ($s -eq $null) { continue }
+            $nm = [string]$s.Name
+            if ($nm -eq '' -or $nm -eq $script:SvcName) { continue }
+            $o = New-Object PSObject -Property @{ Name = $nm; DisplayName = [string]$s.DisplayName; State = [string]$s.State }
             [void]$res.Add($o)
         }
     } catch { }
@@ -1718,7 +1741,7 @@ function Get-StatusRows {
     elseif ($script:SlowCache['PortForeign'] -eq $true) { $needPortCheck = $true }
     elseif ([string]$script:SlowCache['SvcStateAtCheck'] -ne [string]$snap.Status) { $needPortCheck = $true }
     if ($needPortCheck) {
-        $script:SlowCache['Listeners'] = Get-UdpListeners $script:NtpPort
+        $script:SlowCache['Listeners'] = @(Get-UdpListeners $script:NtpPort)
         $script:SlowCache['SlowTime'] = Get-Date
         $script:SlowCache['SvcStateAtCheck'] = [string]$snap.Status
         if (-not $Fast) {
@@ -1731,7 +1754,10 @@ function Get-StatusRows {
             } catch { }
         }
     }
-    $listeners = $script:SlowCache['Listeners']
+    $listeners = @()
+    # В PowerShell 2.0 @($null) даёт массив из одного пустого элемента, поэтому элементы
+    # фильтруются явно — иначе пустой порт выглядел бы как «посторонний процесс».
+    foreach ($l0 in @($script:SlowCache['Listeners'])) { if ($l0 -ne $null) { $listeners += $l0 } }
     $w32Pid = [int]$script:SlowCache['SvcPid']
     $foreignName = ''
     $ownName = ''
@@ -1799,9 +1825,10 @@ function Get-StatusRows {
     }
     # 13. Конфликтующие службы (из кеша при быстром обновлении)
     if (-not $Fast -or $script:SlowCache['Conflicts'] -eq $null) {
-        $script:SlowCache['Conflicts'] = Get-ConflictingServices
+        $script:SlowCache['Conflicts'] = @(Get-ConflictingServices)
     }
-    $conf = $script:SlowCache['Conflicts']
+    $conf = @()
+    foreach ($c0 in @($script:SlowCache['Conflicts'])) { if ($c0 -ne $null) { $conf += $c0 } }
     if ($conf.Count -gt 0) {
         $names = New-Object System.Collections.ArrayList
         foreach ($c in $conf) { [void]$names.Add($c.Name + ' [' + $c.State + ']') }
@@ -1811,10 +1838,11 @@ function Get-StatusRows {
     }
     # 14. Последнее событие службы времени (из кеша при быстром обновлении)
     if (-not $Fast -or $script:SlowCache['Events'] -eq $null) {
-        $script:SlowCache['Events'] = Get-W32TimeEvents -Max 1
+        $script:SlowCache['Events'] = @(Get-W32TimeEvents -Max 1)
     }
-    $events = $script:SlowCache['Events']
-    if ($events.Count -gt 0) {
+    $events = @()
+    foreach ($ev0 in @($script:SlowCache['Events'])) { if ($ev0 -ne $null) { $events += $ev0 } }
+    if ($events.Count -gt 0 -and $events[0] -ne $null -and $events[0].Time -ne $null) {
         $e0 = $events[0]
         [void]$rows.Add((New-StatusRow 'Последнее событие W32Time' ($e0.Time.ToString('yyyy-MM-dd HH:mm:ss') + ' (ID ' + $e0.Id + ')' + $slowStamp) 'справочно' 'info'))
     } else {
@@ -3236,7 +3264,7 @@ function On-CmdStripClick {
 }
 
 function On-CmdEventsClick {
-    $ev = Get-W32TimeEvents -Max 10
+    $ev = @(Get-W32TimeEvents -Max 10)
     $sb = New-Object System.Text.StringBuilder
     [void]$sb.AppendLine('--- Последние события источника W32Time (журнал System) ---')
     if ($ev.Count -eq 0) { [void]$sb.AppendLine('Записей нет. Это нормально, если служба давно работает без сбоев.') }
@@ -3267,7 +3295,8 @@ function On-CmdRediscoverClick {
 }
 
 function On-CmdPortClick {
-    $items = Get-UdpListeners $script:NtpPort
+    $items = @()
+    foreach ($i0 in @(Get-UdpListeners $script:NtpPort)) { if ($i0 -ne $null) { $items += $i0 } }
     $sb = New-Object System.Text.StringBuilder
     [void]$sb.AppendLine('--- Кто слушает UDP ' + $script:NtpPort + ' ---')
     if ($items.Count -eq 0) { [void]$sb.AppendLine('Никто не слушает — NTP-сервер не отвечает клиентам.') }

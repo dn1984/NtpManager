@@ -3,7 +3,7 @@
 **Portable monitoring and management tool for the Windows Time service (w32time): an NTP server for the local network plus an NTP client that takes its time from a GPS time server.**
 
 [![PowerShell 2.0+](https://img.shields.io/badge/PowerShell-2.0%2B-blue.svg)](#requirements)
-[![Windows Server 2008 R2+](https://img.shields.io/badge/Windows-Server%202008%20R2%2B-blue.svg)](#requirements)
+[![Windows 7+ / Server 2008 R2+](https://img.shields.io/badge/Windows-7%2B%20%2F%20Server%202008%20R2%2B-blue.svg)](#supported-windows-versions)
 [![No installation](https://img.shields.io/badge/installation-not%20required-success.svg)](#installation)
 [![License MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Syntax check](https://github.com/dn1984/NtpManager/actions/workflows/syntax-check.yml/badge.svg)](https://github.com/dn1984/NtpManager/actions/workflows/syntax-check.yml)
@@ -86,10 +86,32 @@ server (or to a USB stick) and double-click.
 
 | Component | Requirement |
 |---|---|
-| Operating system | Windows Server 2008 R2 (including SP1), Windows Server 2008, Windows Vista or newer |
+| Operating system | Windows 7 / Windows Server 2008 R2 or newer — see [Supported Windows versions](#supported-windows-versions) |
 | PowerShell | 2.0 (ships with the OS) — nothing extra to install |
 | .NET Framework | 2.0 / 3.5 (included in Windows Server 2008 R2) |
 | Privileges | administrator — for changes only; viewing, reports and diagnostics work as a regular user |
+
+## Supported Windows versions
+
+The tool drives the **Windows Time service** (`w32time`); its registry layout and the `w32tm` command are
+identical in every version from Vista / Server 2008 onwards. There are no version-specific code paths:
+the tool detects which PowerShell engine and which event source are available.
+
+| Family | Versions | State |
+|---|---|---|
+| Windows Server | 2008 R2, 2012, 2012 R2, 2016, 2019, 2022, 2025 | the primary target is 2008 R2; Server Core has no `gpedit.msc` (the tool says so) |
+| Windows client | 7, 8, 8.1, 10, 11 | actually verified on Windows 10 Pro under both PowerShell engines |
+| Not supported | Windows XP / Server 2003 | no `w32tm /query` command and a different registry layout (no `TimeProviders` branch) |
+
+What the tool does differently depending on the Windows version:
+
+| Difference | How it is handled |
+|---|---|
+| PowerShell 2.0 (2008 R2 / 7) vs 5.1 (10/11, Server 2012+) | only features available in 2.0 are used; the `-STA` switch is added only where supported |
+| Time service event source | Windows 8 / Server 2012 and newer use the modern `Microsoft-Windows-Time-Service` provider; 2008 R2 / 7 use the classic `W32Time` source — both are attempted |
+| The service runs inside `svchost.exe` (all versions) | the owner of port 123 is detected by the services inside the listening process, not by the process name |
+| Server Core | no `gpedit.msc` — the tool reports this and suggests alternatives |
+| Domain or workgroup | detected through WMI (`PartOfDomain`) and taken into account in the policy explanations |
 
 ## Installation
 
@@ -254,6 +276,14 @@ To verify reachability from a client, open the Diagnostics tab, enter the server
 
 ## FAQ
 
+### Is the tool only for Windows Server 2008 R2?
+
+No. "2008 R2+" means "2008 R2 **and newer**: the tool targets Windows 7 / Server 2008 R2 and every later
+version up to Windows 11 and Windows Server 2025, because the time service and the `w32tm` command are the
+same there. 2008 R2 was the target system in the original task (a server on a local network without
+internet access), while the actual verification ran on Windows 10 Pro under both PowerShell engines —
+2.0 and 5.1. See [Supported Windows versions](#supported-windows-versions) for details.
+
 ### Do I have to write `,0x9` or is the IP address enough?
 
 The IP address alone is enough: with the "append the ,0x9 flag automatically" checkbox enabled (default)
@@ -366,6 +396,12 @@ client (real answers from live servers: `stratum 13` and `stratum 4` with correc
 39 tooltips; port 123 ownership detection (the service inside `svchost` is recognised as ours); automatic
 `,0x9` flag insertion; deleting an (empty) policy branch without touching anything; the change preview in
 policy mode.
+
+Engine compatibility was verified separately: PowerShell 2.0 specifics (`foreach` over `$null` executes the
+body once, `@($null)` yields a single empty element) no longer produce false port-conflict warnings or
+blank service rows, and time service events are read both from the modern
+`Microsoft-Windows-Time-Service` provider (Windows 10/11) and from the classic `W32Time` source
+(Windows Server 2008 R2 / 7), so the status row shows a real dated event on both platforms.
 
 **Not verified on a live system:** writing values to the registry and to the policy branch, restarting the
 service, adding a firewall rule, running `w32tm /register`, and exchanging time with a real GPS server
