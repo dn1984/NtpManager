@@ -1,0 +1,58 @@
+name: Сообщение об ошибке
+description: Что-то в утилите работает не так, как ожидалось
+title: "[Ошибка] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Спасибо за отчёт! Пожалуйста, **удалите из вставляемых текстов адреса и имена вашей сети** —
+        отчёт и журнал содержат данные о конкретной машине.
+  - type: input
+    id: version
+    attributes:
+      label: Версия NtpManager
+      description: "Видна в заголовке окна или в отчёте: NtpManager.cmd -Report"
+      placeholder: "1.4"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Версия Windows и разрядность
+      placeholder: "Windows Server 2008 R2 SP1 x64"
+    validations:
+      required: true
+  - type: input
+    id: psversion
+    attributes:
+      label: Версия PowerShell
+      description: "Вывод $PSVersionTable.PSVersion или то, что показывает сам отчёт"
+      placeholder: "2.0"
+    validations:
+      required: false
+  - type: textarea
+    id: steps
+    attributes:
+      label: Шаги воспроизведения
+      description: Что именно вы нажимали или какую команду запускали
+      placeholder: |
+        1. Запустил NtpManager.cmd
+        2. Вкладка «Настройка» → ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Что ожидалось и что получилось
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Текст отчёта (без данных вашей сети)
+      description: "Вывод команды: NtpManager.cmd -Report"
+      render: text
+    validations:
+      required: false

@@ -1,0 +1,61 @@
+# ---------------------------------------------------------------------------
+# NtpManager — what must never be committed.
+#
+# The repository contains the clean application only: the PowerShell script,
+# the two launchers and the documentation. Everything below is either created
+# by the tool at runtime, produced by local testing, or may contain
+# machine-specific data and credentials.
+# ---------------------------------------------------------------------------
+
+# --- runtime files created by the tool next to itself ---------------------
+NtpManager.log
+NtpManager.log.1
+NtpManager.settings.ini
+NtpManager-status.txt
+NtpManager-backup/
+*.reg
+
+# --- local test scripts and collected reference material (not the app) ----
+verify/
+research/
+tests/
+
+# --- local working copy of the detailed guide (the repository uses
+#     README.md and README.en.md instead) ---
+README-NtpManager.md
+
+# --- agent / editor / OS noise --------------------------------------------
+.zwork/
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.stackdump
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# --- anything that may contain credentials or machine identifiers ---------
+*.pfx
+*.p12
+*.key
+*.pem
+*.ppk
+id_rsa*
+id_ed25519*
+secrets*
+*.secret
+token*
+*.token
+.env
+.env.*
+credentials*
+
+# --- archives and downloaded material -------------------------------------
+*.zip
+*.7z
+*.rar
+*.tar
+*.gz
+*.iso

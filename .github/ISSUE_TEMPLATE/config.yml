@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Документация и частые вопросы
+    url: https://github.com/dn1984/NtpManager/blob/main/README.md
+    about: Возможно, ответ уже есть в инструкции — начните с раздела «Частые вопросы»
+  - name: English documentation
+    url: https://github.com/dn1984/NtpManager/blob/main/README.en.md
+    about: Full documentation in English

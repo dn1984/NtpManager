@@ -1,0 +1,25 @@
+name: Предложение
+description: Идея по улучшению утилиты или документации
+title: "[Предложение] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Какую задачу нужно решить
+      description: Опишите ситуацию, а не только желаемое решение
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Предлагаемое решение
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: На какой версии Windows это нужно
+      placeholder: "Windows Server 2008 R2"
+    validations:
+      required: false

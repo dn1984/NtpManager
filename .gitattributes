@@ -1,0 +1,16 @@
+# Keep the repository content normalised: LF in the object store,
+# platform-native line endings on checkout.
+
+* text=auto
+
+# PowerShell and cmd files are text; CRLF is fine (and native) on Windows
+*.ps1        text
+*.cmd        text
+
+# Documentation and configuration
+*.md         text
+*.yml        text
+*.yaml       text
+.gitignore   text
+.gitattributes text
+LICENSE      text
